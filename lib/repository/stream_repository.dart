@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:rxdart/subjects.dart';
 
 class StreamRepository {
-  BehaviorSubject _stream = BehaviorSubject<List<int>>();
+  BehaviorSubject<List<int>> _stream = BehaviorSubject<List<int>>();
 
   void close() {
     _stream.close();
