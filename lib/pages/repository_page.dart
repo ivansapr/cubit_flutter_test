@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cubit_example/repository/repository.dart';
 
 import '../cubit/test_cubit.dart';
@@ -12,11 +14,15 @@ class RepositoryPage extends StatefulWidget {
 class _RepositoryPageState extends State<RepositoryPage> {
   TestCubit cubit;
 
+  final bonRefreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
+  Completer<void> _refreshCompleter;
   @override
   void initState() {
+    super.initState();
     final repository = RepositoryProvider.of<Repository>(context);
     cubit = TestCubit(repository);
-    super.initState();
+
+    _refreshCompleter = Completer();
   }
 
   @override
@@ -37,35 +43,53 @@ class _RepositoryPageState extends State<RepositoryPage> {
         tooltip: 'Increment',
         child: Icon(Icons.add),
       ),
-      body: BlocBuilder<TestCubit, TestState>(
-        cubit: cubit,
-        builder: (context, state) {
-          print(state);
-          if (state is TestInitial) {
-            return Center(
-              child: Text('Initia?l'),
-            );
-          }
-          if (state is TestLoading) {
-            return Center(child: CircularProgressIndicator());
-          }
+      body: RefreshIndicator(
+        onRefresh: onRefresh,
+        child: BlocConsumer<TestCubit, TestState>(
+          listener: (context, state) {
+            if (state is TestLoaded) {
+              _refreshCompleter.complete();
+              _refreshCompleter = Completer();
+            }
+          },
+          cubit: cubit,
+          builder: (context, state) {
+            print(state);
+            if (state is TestInitial) {
+              return Center(
+                child: Text('Initia?l'),
+              );
+            }
+            if (state is TestLoading) {
+              return Center(child: CircularProgressIndicator());
+            }
 
-          if (state is TestLoaded) {
-            return ListView.separated(
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text('Index $index'),
-                );
-              },
-              separatorBuilder: (context, index) {
-                return Divider();
-              },
-              itemCount: state.data.length,
-            );
-          }
-          return Container();
-        },
+            if (state is TestLoaded) {
+              return buildListView(state);
+            }
+            return Container();
+          },
+        ),
       ),
     );
+  }
+
+  ListView buildListView(TestLoaded state) {
+    return ListView.separated(
+      itemBuilder: (context, index) {
+        return ListTile(
+          title: Text('Index $index'),
+        );
+      },
+      separatorBuilder: (context, index) {
+        return Divider();
+      },
+      itemCount: state.data.length,
+    );
+  }
+
+  Future<void> onRefresh() async {
+    cubit.onRefresh();
+    return _refreshCompleter.future;
   }
 }

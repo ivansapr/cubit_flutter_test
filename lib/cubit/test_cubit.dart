@@ -21,4 +21,8 @@ class TestCubit extends Cubit<TestState> {
     emit(TestLoading());
     repository.loadData();
   }
+
+  Future<void> onRefresh() async {
+    repository.loadData();
+  }
 }
